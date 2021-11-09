@@ -1,0 +1,243 @@
+/**
+ * Implements an AVL tree.
+ * Note that all "matching" is based on the compareTo method.
+ * @author Mark Allen Weiss
+ * Generic K.Rege
+ */
+package ch.zhaw.ads;
+
+public class AVLSearchTree<T extends Comparable<T>> extends SortedBinaryTree<T> {
+
+    public String printTree() {
+        StringBuilder out = new StringBuilder();
+        if (root.right != null) {
+            printTree(root.right,out, true, "");
+        }
+        out.append(root.values + "\n");
+        if (root.left != null) {
+            printTree(root.left, out, false, "");
+        }
+        return out.toString();
+    }
+
+    private void printTree(TreeNode node, StringBuilder out, boolean isRight, String indent) {
+        if (node.right != null) {
+            printTree(node.right, out, true,
+                    indent + (isRight ? "        " : " |      "));
+        }
+        out.append(indent);
+        if (isRight) {
+            out.append(" /");
+        } else {
+            out.append(" \\");
+        }
+        out.append("----- ");
+        out.append(node.values+"\n");
+        if (node.left != null) {
+            printTree(node.left, out, false, indent + (isRight ? " |      " : "        "));
+        }
+    }
+
+    @Override
+    protected int calcSize(TreeNode p) {
+        if (p == null)
+        {
+            return 0;
+        }
+        return p.values.size() + calcSize(p.left) + calcSize(p.right);
+    }
+
+    private boolean balanced(TreeNode<T> node) {
+        if(node == null)
+        {
+            return true;
+        }
+        int max = calcHeight(node);
+        int min = calcHeightMin(node);
+
+        return max - min <= 1;
+    }
+
+    protected int calcHeightMin(TreeNode<T> node) {
+        if (node == null) {
+            return 0;
+        } else {
+            return 1 + Math.min(calcHeight(node.left),calcHeight(node.right));
+        }
+    }
+
+    public boolean balanced() {
+        return balanced(root);
+    }
+
+    /**
+     * Return the height of node t, or 0, if null.
+     */
+    private static int height(TreeNode t) {
+        return t == null ? 0 : t.height;
+    }
+
+    /**
+     * Insert into the tree;
+     * @param element the item to insert.
+     */
+    public void add(T element) {
+        root = insertAt(root, element);
+    }
+
+    private TreeNode<T> balance(TreeNode<T> p) {
+        if (p == null) {
+            return null;
+        } else if (height(p.left) - height(p.right) == 2) {
+            if (height(p.left.left) > height(p.left.right)) {
+                p = rotateR(p);
+            } else {
+                p = rotateLR(p);
+            }
+        } else if (height(p.right) - height(p.left) == 2) {
+            if (height(p.right.right) >= height(p.right.left)) {
+                p = rotateL(p);
+            } else {
+                p = rotateRL(p);
+            }
+        }
+        p.height = Math.max(height(p.left), height(p.right)) + 1;
+        return p;
+    }
+
+    /**
+     * Internal method to insert into a subtree.
+     * @param p the item to insert.
+     * @param element the node that roots the tree.
+     * @return the new root.
+     */
+    private TreeNode insertAt(TreeNode p, T element) {
+        if (p == null) {
+            p = new TreeNode<T>(element);
+            p.height = 1;
+            return p;
+        } else {
+            int c = element.compareTo((T) p.getValue());
+            if (c == 0) {
+                p.values.add(element);
+            }
+            else if (c < 0) {
+                p.left = insertAt(p.left, element);
+            } else if (c > 0) {
+                p.right = insertAt(p.right, element);
+            }
+        }
+        p = balance(p);
+        return p;
+    }
+
+    private TreeNode<T> replaceNode;
+    private TreeNode<T> findRepAt(TreeNode<T> node) {
+        if (node.right != null) {
+            node.right = findRepAt(node.right);
+            node = balance(node);
+        } else {
+            replaceNode = node;
+            node = node.left;
+        }
+        return node;
+    }
+
+    private T removedNode;
+    private TreeNode<T> removeAt(TreeNode<T> node, T x) {
+        if (node == null) {
+            return null;
+        } else {
+            if (x.compareTo(node.getValue()) == 0) {
+                removedNode = node.getValue();
+                if (node.values.size() > 1) {
+                    node.values.remove(0);
+                    return node;
+                } else if (node.left == null) {
+                    node = node.right;
+                } else if (node.right == null) {
+                    node = node.left;
+                } else {
+                    node.left = findRepAt(node.left);
+                    replaceNode.left = node.left;
+                    replaceNode.right = node.right;
+                    node = replaceNode;
+                }
+            } else if (x.compareTo(node.getValue()) <= 0) {
+                node.left = removeAt(node.left, x);
+            } else {
+                node.right = removeAt(node.right, x);
+            }
+            node = balance(node);
+            return node;
+        }
+    }
+
+    /**
+     * Remove from the tree. Nothing is done if x is not found.
+     * @param x the item to remove.
+     */
+    public T remove(T x) {
+        removedNode = null;
+        root = removeAt(root, x);
+        return removedNode;
+    }
+
+    public Traversal<T> traversal() {
+        return new AVLTreeTraversal<T>(root);
+    }
+
+    public T removeLast() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Rotate binary tree node with left child.
+     * For AVL trees, this is a single rotation for case 1.
+     * Update heights, then return new root.
+     */
+    private static TreeNode rotateR(TreeNode k2) {
+        TreeNode k1 = k2.left;
+        k2.left = k1.right;
+        k1.right = k2;
+        k2.height = Math.max(height(k2.left), height(k2.right)) + 1;
+        k1.height = Math.max(height(k1.left), k2.height) + 1;
+        return k1;
+    }
+
+    /**
+     * Rotate binary tree node with right child.
+     * For AVL trees, this is a single rotation for case 4.
+     * Update heights, then return new root.
+     */
+    private static TreeNode rotateL(TreeNode k1) {
+        TreeNode k2 = k1.right;
+        k1.right = k2.left;
+        k2.left = k1;
+        k1.height = Math.max(height(k1.left), height(k1.right)) + 1;
+        k2.height = Math.max(height(k2.right), k1.height) + 1;
+        return k2;
+    }
+
+    /**
+     * Double rotate binary tree node: first left child
+     * with its right child; then node k3 with new left child.
+     * For AVL trees, this is a double rotation for case 2.
+     * Update heights, then return new root.
+     */
+    private static TreeNode rotateLR(TreeNode k3) {
+        k3.left = rotateL(k3.left);
+        return rotateR(k3);
+    }
+
+    /**
+     * Double rotate binary tree node: first right child
+     * with its left child; then node k1 with new right child.
+     * For AVL trees, this is a double rotation for case 3.
+     * Update heights, then return new root.
+     */
+    private static TreeNode rotateRL(TreeNode k1) {
+        k1.right = rotateR(k1.right);
+        return rotateL(k1);
+    }
+}
