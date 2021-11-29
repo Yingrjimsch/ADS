@@ -10,22 +10,22 @@ public class FuzzySearchServer implements CommandExecutor {
     // load all names into names List
     // each name only once (i.e. no doublettes allowed
     public static void loadNames(String nameString) {
-      names.clear();
-      Arrays.stream(nameString.split("\n")).forEach(rank -> {
-        String name = rank.split(";")[0];
-        if (!names.contains(name)) {
-          names.add(name);
-        }
-      });
+        names.clear();
+        Arrays.stream(nameString.split("\n")).forEach(rank -> {
+            String name = rank.split(";")[0];
+            if (!names.contains(name)) {
+                names.add(name);
+            }
+        });
     }
 
     // add a single trigram to 'trigrams' index
     public static void addToTrigrams(int nameIdx, String trig) {
-      if (trigrams.containsKey(trig)) {
-        trigrams.get(trig).add(nameIdx);
-      } else {
-        trigrams.put(trig, new ArrayList<>(Arrays.asList(nameIdx)));
-      }
+        if (trigrams.containsKey(trig)) {
+            trigrams.get(trig).add(nameIdx);
+        } else {
+            trigrams.put(trig, new ArrayList<>(Arrays.asList(nameIdx)));
+        }
     }
 
     // works better for flipped and short names if " " added and lowercase
@@ -38,16 +38,16 @@ public class FuzzySearchServer implements CommandExecutor {
         name = nomalize(name);
         List<String> trigrams = new ArrayList<>();
         for (int i = 0; i + 3 <= name.length(); i++) {
-          trigrams.add(name.substring(i, i + 3));
+            trigrams.add(name.substring(i, i + 3));
         }
-      return trigrams;
+        return trigrams;
     }
 
     public static void constructTrigramIndex(List<String> names) {
         for (int nameIdx = 0; nameIdx < names.size(); nameIdx++) {
             List<String> trigs = trigramForName(names.get(nameIdx));
             for (String trig : trigs) {
-                addToTrigrams(nameIdx,trig);
+                addToTrigrams(nameIdx, trig);
             }
         }
     }
@@ -64,11 +64,11 @@ public class FuzzySearchServer implements CommandExecutor {
         counts.clear();
         int maxIdx = -1;
         trigrams.entrySet().stream().filter(trigram -> nomalize(name).contains(trigram.getKey()))
-          .forEach(entry -> entry.getValue().forEach(e -> incCount(e)));
+                .forEach(entry -> entry.getValue().forEach(FuzzySearchServer::incCount));
         if (!counts.isEmpty()) {
-          maxIdx = Collections.max(counts.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
+            maxIdx = Collections.max(counts.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
         }
-      return maxIdx;
+        return maxIdx;
     }
     // finde Namen gebe "" zurück wenn gefundener Name nicht grösser als verlangter score ist.
     public static String find(String searchName, int scoreRequired) {
